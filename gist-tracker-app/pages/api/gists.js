@@ -60,9 +60,9 @@ export default async function handler(req, res) {
     //patch method
   } else if (req.method === "PATCH") {
     try {
-      const { gistId, description, filename, code } = req.body;
+      const {description, filename, code } = req.body;
 
-      if (!gistId || !description || !filename || !code) {
+      if (!description || !filename || !code) {
         return res.status(400).json({ error: "All fields are required." });
       }
 

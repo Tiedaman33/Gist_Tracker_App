@@ -16,7 +16,7 @@ export default function Dashboard() {
   const [editFilename, setEditFilename] = useState("");
   const [editCode, setEditCode] = useState("");
   const [page, setPage] = useState(1);
-  const [showCreateForm, setShowCreateForm] = useState(false); // Toggle form visibility
+  const [showCreateForm, setShowCreateForm] = useState(false);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -54,7 +54,7 @@ export default function Dashboard() {
       setDescription("");
       setFilename("gistfile.txt");
       setCode("");
-      setShowCreateForm(false); // Hide the form after creation
+      setShowCreateForm(false);
     } catch (err) {
       alert(err.message);
     }
@@ -63,7 +63,11 @@ export default function Dashboard() {
   const deleteGist = async (gistId) => {
     if (!confirm("Are you sure you want to delete this gist?")) return;
     try {
-      const response = await fetch(`/api/gists/${gistId}`, { method: "DELETE" });
+      const response = await fetch(`/api/gists`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ gistId }),
+      });
       if (!response.ok) throw new Error("Failed to delete gist.");
       await fetchGists();
       alert("Gist deleted successfully!");
@@ -83,16 +87,15 @@ export default function Dashboard() {
           code: editCode,
         }),
       });
-  
+
       if (!response.ok) throw new Error("Failed to update gist.");
-      await fetchGists(); // Refresh the list of gists
-      setEditMode(null); // Exit edit mode after saving
+      await fetchGists();
+      setEditMode(null);
       alert("Gist updated successfully!");
     } catch (err) {
       alert(err.message);
     }
   };
-  
 
   if (status === "loading") {
     return (
@@ -132,7 +135,7 @@ export default function Dashboard() {
           </div>
         </div>
         <button
-          onClick={() => setShowCreateForm(!showCreateForm)} // Toggle the form
+          onClick={() => setShowCreateForm(!showCreateForm)}
           className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
         >
           {showCreateForm ? "View Gists" : "Create New Gist"}
@@ -196,44 +199,98 @@ export default function Dashboard() {
                 No gists found. Create your first one!
               </div>
             ) : (
-              <div className="grid gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-min">
                 {gists.map((gist) => (
                   <div
                     key={gist.id}
-                    className="bg-white rounded-xl shadow-sm p-6"
+                    className="bg-white rounded-xl shadow-sm p-6 min-h-[10rem]"
                   >
-                    {/* Gist Details */}
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                      {gist.description || "Untitled Gist"}
-                    </h3>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <div className="text-sm text-gray-500 mb-2">
-                        {Object.keys(gist.files)[0]}
-                      </div>
-                      <pre className="text-sm font-mono text-gray-800 overflow-x-auto">
-                        {Object.values(gist.files)[0]?.content ||
-                          "No content available"}
-                      </pre>
-                    </div>
-                    <div className="flex space-x-2 mt-4">
-  <button
-    onClick={() => {
-      setEditMode(gist.id);
-      setEditDescription(gist.description);
-      setEditFilename(Object.keys(gist.files)[0]);
-      setEditCode(Object.values(gist.files)[0]?.content || "");
-    }}
-    className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
-  >
-    Edit
-  </button>
-  <button
-    onClick={() => deleteGist(gist.id)}
-    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-  >
-    Delete
-  </button>
-</div>
+                    {editMode === gist.id ? (
+                      // Edit Form
+                      <form
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          editGist(gist.id);
+                        }}
+                        className="space-y-4"
+                      >
+                        <input
+                          type="text"
+                          value={editDescription}
+                          onChange={(e) => setEditDescription(e.target.value)}
+                          placeholder="Edit Description"
+                          className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                        <input
+                          type="text"
+                          value={editFilename}
+                          onChange={(e) => setEditFilename(e.target.value)}
+                          placeholder="Edit Filename"
+                          className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                        <textarea
+                          value={editCode}
+                          onChange={(e) => setEditCode(e.target.value)}
+                          placeholder="Edit Code Content"
+                          className="w-full p-2 border rounded-lg h-32 focus:ring-2 focus:ring-blue-500"
+                          required
+                        />
+                        <div className="flex space-x-2">
+                          <button
+                            type="submit"
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditMode(null)}
+                            className="px-4 py-2 bg-gray-400 text-white rounded-lg hover:bg-gray-500"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      // Gist Details
+                      <>
+                        <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                          {gist.description || "Untitled Gist"}
+                        </h3>
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <div className="text-sm text-gray-500 mb-2">
+                            {Object.keys(gist.files)[0]}
+                          </div>
+                          <pre className="text-sm font-mono text-gray-800 overflow-x-auto">
+                            {Object.values(gist.files)[0]?.content ||
+                              "No content available"}
+                          </pre>
+                        </div>
+                        <div className="flex space-x-2 mt-4">
+                          <button
+                            onClick={() => {
+                              setEditMode(gist.id);
+                              setEditDescription(gist.description);
+                              setEditFilename(Object.keys(gist.files)[0]);
+                              setEditCode(
+                                Object.values(gist.files)[0]?.content || ""
+                              );
+                            }}
+                            className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => deleteGist(gist.id)}
+                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
