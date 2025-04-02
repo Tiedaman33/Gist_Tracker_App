@@ -1,4 +1,8 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
-
-export default nextConfig;
+const nextConfig = {
+    reactStrictMode: true,
+    output: 'standalone' // Helps with Vercel deployments
+  };
+  
+  export default nextConfig;
+  
